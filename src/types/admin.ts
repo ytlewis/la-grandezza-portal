@@ -76,6 +76,15 @@ export interface CashflowData {
   bookings: number;
 }
 
+export interface Service {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  features: string[];
+  icon: string; // lucide icon name
+}
+
 export interface Testimonial {
   id: string;
   userId: string;

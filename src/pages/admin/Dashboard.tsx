@@ -12,6 +12,7 @@ import PackageEditor from "@/components/admin/PackageEditor";
 import PaymentSettings from "@/components/admin/PaymentSettings";
 import TestimonialsManagement from "@/components/admin/TestimonialsManagement";
 import AdminSettings from "@/components/admin/AdminSettings";
+import ServicesManagement from "@/components/admin/ServicesManagement";
 
 export type AdminView = 
   | "dashboard" 
@@ -23,7 +24,8 @@ export type AdminView =
   | "packages" 
   | "payments"
   | "testimonials"
-  | "settings";
+  | "settings"
+  | "services";
 
 const AdminDashboard = () => {
   const { isAuthenticated } = useAuth();
@@ -55,6 +57,8 @@ const AdminDashboard = () => {
         return <TestimonialsManagement />;
       case "settings":
         return <AdminSettings />;
+      case "services":
+        return <ServicesManagement />;
       default:
         return <DashboardHome />;
     }

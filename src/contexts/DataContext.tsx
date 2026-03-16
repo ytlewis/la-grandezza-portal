@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { TeamMember, PortfolioItem, ContactInfo, Package, Booking, PaymentSettings, Testimonial } from "@/types/admin";
+import { TeamMember, PortfolioItem, ContactInfo, Package, Booking, PaymentSettings, Testimonial, Service } from "@/types/admin";
 
 interface DataContextType {
   teamMembers: TeamMember[];
@@ -9,6 +9,7 @@ interface DataContextType {
   bookings: Booking[];
   testimonials: Testimonial[];
   paymentSettings: PaymentSettings;
+  services: Service[];
   updateTeamMembers: (members: TeamMember[]) => void;
   updatePortfolioItems: (items: PortfolioItem[]) => void;
   updateContactInfo: (info: ContactInfo) => void;
@@ -19,6 +20,7 @@ interface DataContextType {
   updatePaymentSettings: (settings: PaymentSettings) => void;
   addTestimonial: (t: Testimonial) => void;
   updateTestimonials: (t: Testimonial[]) => void;
+  updateServices: (s: Service[]) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -26,6 +28,57 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 // Migrate stale /src/assets/ paths to /assets/ (fixes production image paths)
 const migrateImagePath = (path: string) =>
   typeof path === "string" ? path.replace(/^\/src\/assets\//, "/assets/") : path;
+
+const defaultServices: Service[] = [
+  {
+    id: "1",
+    title: "Weddings",
+    icon: "Heart",
+    image: "/assets/portfolio-wedding.jpg",
+    description: "From intimate ceremonies to grand celebrations, we craft your love story with meticulous attention to every detail. Our wedding planning services include venue selection, décor design, vendor coordination, and day-of management.",
+    features: ["Venue Scouting", "Floral Design", "Catering Coordination", "Entertainment Booking", "Day-of Coordination"],
+  },
+  {
+    id: "2",
+    title: "Corporate Events",
+    icon: "Building2",
+    image: "/assets/portfolio-corporate.jpg",
+    description: "Elevate your brand with sophisticated corporate gatherings. We handle conferences, product launches, team-building events, and executive galas with professionalism and flair.",
+    features: ["Conference Planning", "Brand Activation", "AV & Production", "Catering & Hospitality", "Post-Event Reports"],
+  },
+  {
+    id: "3",
+    title: "Galas & Balls",
+    icon: "PartyPopper",
+    image: "/assets/hero-event.jpg",
+    description: "Grand, opulent affairs that command attention. Our galas feature stunning décor, world-class entertainment, and a seamless guest experience from arrival to departure.",
+    features: ["Theme Development", "Luxury Décor", "Live Entertainment", "VIP Management", "Red Carpet Setup"],
+  },
+  {
+    id: "4",
+    title: "Social Gatherings",
+    icon: "Users",
+    image: "/assets/portfolio-social.jpg",
+    description: "Sophisticated cocktail parties, anniversary celebrations, and exclusive dinners. We create intimate atmospheres that foster connection and celebration.",
+    features: ["Menu Curation", "Ambient Design", "Guest List Management", "Custom Invitations", "Photography"],
+  },
+  {
+    id: "5",
+    title: "Birthday Parties",
+    icon: "Cake",
+    image: "/assets/portfolio-birthday.jpg",
+    description: "Milestone birthdays deserve extraordinary celebrations. From elegant adult parties to magical themed events, we make every birthday unforgettable.",
+    features: ["Theme Design", "Custom Cakes", "Entertainment", "Party Favors", "Photo & Video"],
+  },
+  {
+    id: "6",
+    title: "Bespoke Events",
+    icon: "Sparkles",
+    image: "/assets/portfolio-social.jpg",
+    description: "When your vision doesn't fit a category, we create something entirely new. Our bespoke service is for those who dream beyond convention.",
+    features: ["Concept Development", "Custom Design", "Full Production", "Concierge Service", "Legacy Documentation"],
+  },
+];
 
 // Default data with image paths as strings
 const defaultTeamMembers: TeamMember[] = [
@@ -177,6 +230,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   });
 
+  const [services, setServices] = useState<Service[]>(() => {
+    try {
+      const stored = localStorage.getItem("services");
+      if (stored) {
+        const parsed: Service[] = JSON.parse(stored);
+        return parsed.map(s => ({ ...s, image: migrateImagePath(s.image) }));
+      }
+      return defaultServices;
+    } catch { return defaultServices; }
+  });
+
   const defaultTestimonials: Testimonial[] = [
     {
       id: "static-1",
@@ -279,6 +343,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [testimonials]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("services", JSON.stringify(services));
+    } catch { console.error("Error saving services"); }
+  }, [services]);
+
   const updateTeamMembers = (members: TeamMember[]) => {
     setTeamMembers(members);
   };
@@ -328,6 +398,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setTestimonials(t);
   };
 
+  const updateServices = (s: Service[]) => {
+    setServices(s);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -338,6 +412,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         bookings,
         testimonials,
         paymentSettings,
+        services,
         updateTeamMembers,
         updatePortfolioItems,
         updateContactInfo,
@@ -348,6 +423,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         updatePaymentSettings,
         addTestimonial,
         updateTestimonials,
+        updateServices,
       }}
     >
       {children}

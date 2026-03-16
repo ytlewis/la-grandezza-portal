@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   MessageSquare,
-  Settings
+  Settings,
+  Sparkles
 } from "lucide-react";
 import { AdminView } from "@/pages/admin/Dashboard";
 import { useState, ReactNode } from "react";
@@ -42,6 +43,7 @@ const AdminLayout = ({ children, currentView, onViewChange }: AdminLayoutProps) 
     { id: "dashboard" as AdminView, label: "Dashboard", icon: LayoutDashboard },
     { id: "bookings" as AdminView, label: "Bookings", icon: Package },
     { id: "calendar" as AdminView, label: "Calendar", icon: Calendar },
+    { id: "services" as AdminView, label: "Services", icon: Sparkles },
     { id: "portfolio" as AdminView, label: "Portfolio", icon: Image },
     { id: "team" as AdminView, label: "Team", icon: Users },
     { id: "packages" as AdminView, label: "Packages", icon: Package },
