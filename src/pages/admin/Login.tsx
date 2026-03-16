@@ -24,14 +24,14 @@ const AdminLogin = () => {
 
   const isFirstRun = !hasAdmins;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (mode === "signup") {
       if (!name.trim()) { toast.error("Please enter your name."); return; }
       if (password.length < 8) { toast.error("Password must be at least 8 characters."); return; }
       if (password !== confirm) { toast.error("Passwords do not match."); return; }
-      const ok = signup(name, email, password);
+      const ok = await signup(name, email, password);
       if (ok) {
         toast.success(isFirstRun ? "Account created! Welcome, Super Admin." : "Account created!");
         navigate("/admin/dashboard");
@@ -39,7 +39,7 @@ const AdminLogin = () => {
         toast.error("An account with this email already exists.");
       }
     } else {
-      const ok = login(email, password);
+      const ok = await login(email, password);
       if (ok) {
         toast.success("Welcome back!");
         navigate("/admin/dashboard");
