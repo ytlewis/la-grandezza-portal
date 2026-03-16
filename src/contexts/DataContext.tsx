@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
-  collection, doc, getDocs, setDoc, deleteDoc, writeBatch,
+  collection, doc, setDoc, deleteDoc, writeBatch, getDocs,
+  onSnapshot, Unsubscribe,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { TeamMember, PortfolioItem, ContactInfo, Package, Booking, PaymentSettings, Testimonial, Service } from "@/types/admin";
@@ -89,37 +90,19 @@ const defaultTestimonials: Testimonial[] = [
 ];
 
 // ── Firestore helpers ──────────────────────────────────────────────────────────
-// Fetch all docs from a collection as typed array
-async function fsGetAll<T>(col: string): Promise<T[]> {
-  if (!db) return [];
-  const snap = await getDocs(collection(db, col));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as T));
-}
-
 // Replace entire collection with new array (batched)
 async function fsSetAll<T extends { id: string }>(col: string, items: T[]) {
   if (!db) return;
   const batch = writeBatch(db);
-  // Delete existing docs
   const snap = await getDocs(collection(db, col));
   snap.docs.forEach(d => batch.delete(d.ref));
-  // Write new docs
   items.forEach(item => batch.set(doc(db!, col, item.id), item));
   await batch.commit();
 }
 
-// Set a single config doc
 async function fsSetDoc(col: string, id: string, data: object) {
   if (!db) return;
   await setDoc(doc(db, col, id), data);
-}
-
-// Get a single config doc
-async function fsGetDoc<T>(col: string, id: string, fallback: T): Promise<T> {
-  if (!db) return fallback;
-  const snap = await getDocs(collection(db, col));
-  const found = snap.docs.find(d => d.id === id);
-  return found ? (found.data() as T) : fallback;
 }
 
 // ── Provider ───────────────────────────────────────────────────────────────────
@@ -146,43 +129,62 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     ({ ...defaultPayment, ...ls.get("paymentSettings", {}) })
   );
 
-  // Fetch everything from Firestore on mount
-  const fetchAll = useCallback(async () => {
+  // ── Real-time Firestore listeners ────────────────────────────────────────────
+  useEffect(() => {
     if (!db) {
-      console.error("[DataContext] Firestore db is null — skipping fetch, using localStorage only");
+      console.error("[Firebase] ❌ db is null — localStorage only mode");
       setLoading(false);
       return;
     }
-    console.log("[DataContext] Fetching from Firestore...");
-    try {
-      const [team, portfolio, svcs, pkgs, bkgs, testi, contact, payment] = await Promise.all([
-        fsGetAll<TeamMember>("teamMembers"),
-        fsGetAll<PortfolioItem>("portfolioItems"),
-        fsGetAll<Service>("services"),
-        fsGetAll<Package>("packages"),
-        fsGetAll<Booking>("bookings"),
-        fsGetAll<Testimonial>("testimonials"),
-        fsGetDoc<ContactInfo>("config", "contactInfo", defaultContact),
-        fsGetDoc<PaymentSettings>("config", "paymentSettings", defaultPayment),
-      ]);
+    console.log("[Firebase] ✅ Attaching real-time listeners...");
+    const unsubs: Unsubscribe[] = [];
 
-      if (team.length)      { const d = team.map(m => ({ ...m, image: migrateImg(m.image) }));      setTeamMembers(d);      ls.set("teamMembers", d); }
-      if (portfolio.length) { const d = portfolio.map(p => ({ ...p, image: migrateImg(p.image) })); setPortfolioItems(d);   ls.set("portfolioItems", d); }
-      if (svcs.length)      { const d = svcs.map(s => ({ ...s, image: migrateImg(s.image) }));      setServices(d);         ls.set("services", d); }
-      if (pkgs.length)      { setPackages(pkgs);       ls.set("packages", pkgs); }
-      if (bkgs.length)      { setBookings(bkgs);       ls.set("bookings", bkgs); }
-      if (testi.length)     { setTestimonials(testi);  ls.set("testimonials", testi); }
-      if (contact)          { setContactInfo(contact); ls.set("contactInfo", contact); }
-      if (payment)          { setPaymentSettings({ ...defaultPayment, ...payment }); ls.set("paymentSettings", payment); }
-      console.log("[DataContext] ✅ Firestore fetch complete — team:", team.length, "portfolio:", portfolio.length);
-    } catch (e) {
-      console.error("[DataContext] ❌ Firestore fetch error:", e);
-    } finally {
-      setLoading(false);
-    }
+    unsubs.push(onSnapshot(collection(db, "teamMembers"), snap => {
+      if (snap.empty) return;
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as TeamMember)).map(m => ({ ...m, image: migrateImg(m.image) }));
+      setTeamMembers(d); ls.set("teamMembers", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "portfolioItems"), snap => {
+      if (snap.empty) return;
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as PortfolioItem)).map(p => ({ ...p, image: migrateImg(p.image) }));
+      setPortfolioItems(d); ls.set("portfolioItems", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "services"), snap => {
+      if (snap.empty) return;
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as Service)).map(s => ({ ...s, image: migrateImg(s.image) }));
+      setServices(d); ls.set("services", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "packages"), snap => {
+      if (snap.empty) return;
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as Package));
+      setPackages(d); ls.set("packages", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "bookings"), snap => {
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as Booking));
+      setBookings(d); ls.set("bookings", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "testimonials"), snap => {
+      if (snap.empty) return;
+      const d = snap.docs.map(s => ({ id: s.id, ...s.data() } as Testimonial));
+      setTestimonials(d); ls.set("testimonials", d);
+    }));
+
+    unsubs.push(onSnapshot(collection(db, "config"), snap => {
+      snap.docs.forEach(s => {
+        if (s.id === "contactInfo") { setContactInfo(s.data() as ContactInfo); ls.set("contactInfo", s.data()); }
+        if (s.id === "paymentSettings") { setPaymentSettings({ ...defaultPayment, ...s.data() as PaymentSettings }); ls.set("paymentSettings", s.data()); }
+      });
+    }));
+
+    setLoading(false);
+    console.log("[Firebase] ✅ Real-time listeners active");
+    return () => unsubs.forEach(u => u());
   }, []);
-
-  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   // ── Updaters ─────────────────────────────────────────────────────────────────
   const updateTeamMembers = async (members: TeamMember[]) => {
