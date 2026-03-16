@@ -31,15 +31,15 @@ const App = () => {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <UserAuthProvider>
-              <DataProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-                  <BrowserRouter>
+        <BrowserRouter>
+          <ThemeProvider>
+            <AuthProvider>
+              <UserAuthProvider>
+                <DataProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
                     <ScrollToTop />
                     <Routes>
                       {/* Admin Routes */}
@@ -55,12 +55,12 @@ const App = () => {
                       <Route path="/book" element={<><Navbar /><Book /><Footer /></>} />
                       <Route path="*" element={<><Navbar /><NotFound /><Footer /></>} />
                     </Routes>
-                  </BrowserRouter>
-                </TooltipProvider>
-              </DataProvider>
-            </UserAuthProvider>
-          </AuthProvider>
-        </ThemeProvider>
+                  </TooltipProvider>
+                </DataProvider>
+              </UserAuthProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );
