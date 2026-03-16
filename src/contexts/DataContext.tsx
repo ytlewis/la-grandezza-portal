@@ -148,7 +148,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   // Fetch everything from Firestore on mount
   const fetchAll = useCallback(async () => {
-    if (!db) return;
+    if (!db) {
+      console.error("[DataContext] Firestore db is null — skipping fetch, using localStorage only");
+      setLoading(false);
+      return;
+    }
+    console.log("[DataContext] Fetching from Firestore...");
     try {
       const [team, portfolio, svcs, pkgs, bkgs, testi, contact, payment] = await Promise.all([
         fsGetAll<TeamMember>("teamMembers"),
@@ -169,8 +174,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       if (testi.length)     { setTestimonials(testi);  ls.set("testimonials", testi); }
       if (contact)          { setContactInfo(contact); ls.set("contactInfo", contact); }
       if (payment)          { setPaymentSettings({ ...defaultPayment, ...payment }); ls.set("paymentSettings", payment); }
+      console.log("[DataContext] ✅ Firestore fetch complete — team:", team.length, "portfolio:", portfolio.length);
     } catch (e) {
-      console.error("Firestore fetch error:", e);
+      console.error("[DataContext] ❌ Firestore fetch error:", e);
     } finally {
       setLoading(false);
     }
@@ -181,7 +187,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   // ── Updaters ─────────────────────────────────────────────────────────────────
   const updateTeamMembers = async (members: TeamMember[]) => {
     setTeamMembers(members); ls.set("teamMembers", members);
+    console.log("[DataContext] Writing teamMembers to Firestore, db:", !!db);
     await fsSetAll("teamMembers", members);
+    console.log("[DataContext] ✅ teamMembers written");
   };
 
   const updatePortfolioItems = async (items: PortfolioItem[]) => {

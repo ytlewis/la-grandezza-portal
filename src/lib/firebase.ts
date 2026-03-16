@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,10 +10,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const configured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+export const configured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
 
 if (!configured) {
-  console.warn("Firebase env vars missing — running in localStorage-only mode.");
+  console.error("[Firebase] ❌ Env vars missing — data will NOT sync across devices.");
+} else {
+  console.log("[Firebase] ✅ Config loaded, project:", firebaseConfig.projectId);
 }
 
 const app = configured
@@ -23,3 +25,9 @@ const app = configured
   : null;
 
 export const db = app ? getFirestore(app) : null;
+
+if (db) {
+  console.log("[Firebase] ✅ Firestore instance created");
+} else {
+  console.error("[Firebase] ❌ Firestore is null — all writes will be localStorage only");
+}
