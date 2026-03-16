@@ -17,7 +17,9 @@ if (!configured) {
 }
 
 const app = configured
-  ? getApps().length ? getApps()[0] : initializeApp(firebaseConfig)
+  ? getApps().length
+    ? getApps()[0]
+    : initializeApp(firebaseConfig)
   : null;
 
 export const db = app ? getFirestore(app) : null;
