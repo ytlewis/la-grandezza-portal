@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 const CTASection = () => (
-  <section className="py-24 bg-black-deep relative overflow-hidden">
+  <section className="py-24 bg-white dark:bg-black-deep relative overflow-hidden">
     <div className="absolute inset-0 opacity-5">
       <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 25% 50%, hsl(43 56% 54% / 0.1) 0%, transparent 50%)" }} />
     </div>
@@ -13,16 +13,16 @@ const CTASection = () => (
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
       >
-        <h2 className="font-heading text-3xl md:text-5xl text-cream mb-6">
+        <h2 className="font-heading text-3xl md:text-5xl text-gray-900 dark:text-cream mb-6">
           Ready to Create Something <span className="gold-text-gradient italic">Extraordinary</span>?
         </h2>
-        <p className="text-muted-foreground text-base mb-10 leading-relaxed">
+        <p className="text-gray-600 dark:text-muted-foreground text-base mb-10 leading-relaxed">
           Let us bring your vision to life. Every event is bespoke, every moment is curated, and every detail is perfected.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link
             to="/book"
-            className="px-10 py-4 bg-gold text-black-deep font-body text-sm tracking-widest uppercase font-semibold hover:bg-gold-light transition-all duration-300 shadow-gold-lg"
+            className="px-10 py-4 bg-gold text-white font-body text-sm tracking-widest uppercase font-semibold hover:bg-gold-light transition-all duration-300 shadow-gold-lg"
           >
             Start Planning
           </Link>

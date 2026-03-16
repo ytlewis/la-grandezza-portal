@@ -11,7 +11,7 @@ const services = [
 ];
 
 const ServicesSection = () => (
-  <section className="py-24 bg-black-deep">
+  <section className="py-24 bg-white dark:bg-black-deep">
     <div className="container mx-auto px-4 md:px-8">
       <motion.div
         className="text-center mb-16"
@@ -21,7 +21,7 @@ const ServicesSection = () => (
         transition={{ duration: 0.6 }}
       >
         <p className="text-gold text-sm tracking-[0.3em] uppercase font-body mb-3">What We Offer</p>
-        <h2 className="font-heading text-3xl md:text-5xl text-cream mb-4">Our Services</h2>
+        <h2 className="font-heading text-3xl md:text-5xl text-gray-900 dark:text-cream mb-4">Our Services</h2>
         <div className="w-24 h-px bg-gold mx-auto" />
       </motion.div>
 
@@ -29,15 +29,15 @@ const ServicesSection = () => (
         {services.map((service, i) => (
           <motion.div
             key={service.title}
-            className="group p-8 border border-gold/10 hover:border-gold/40 transition-all duration-500 bg-black-soft/50 hover:shadow-gold"
+            className="group p-8 border border-gray-200 dark:border-gold/10 hover:border-gold/40 transition-all duration-500 bg-gray-50 dark:bg-black-soft/50 hover:shadow-gold rounded-lg"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
           >
             <service.icon className="w-10 h-10 text-gold mb-6 group-hover:scale-110 transition-transform duration-300" />
-            <h3 className="font-heading text-xl text-cream mb-3">{service.title}</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">{service.description}</p>
+            <h3 className="font-heading text-xl text-gray-900 dark:text-cream mb-3">{service.title}</h3>
+            <p className="text-gray-600 dark:text-muted-foreground text-sm leading-relaxed">{service.description}</p>
           </motion.div>
         ))}
       </div>

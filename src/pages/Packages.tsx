@@ -85,7 +85,7 @@ const featureLabels: Record<string, string> = {
 };
 
 const Packages = () => (
-  <main className="pt-24 pb-16 bg-black-deep min-h-screen">
+  <main className="pt-24 pb-16 bg-white dark:bg-black-deep min-h-screen">
     <div className="container mx-auto px-4 md:px-8">
       <motion.div
         className="text-center mb-16"
@@ -93,9 +93,9 @@ const Packages = () => (
         animate={{ opacity: 1, y: 0 }}
       >
         <p className="text-gold text-sm tracking-[0.3em] uppercase font-body mb-3">Choose Your Experience</p>
-        <h1 className="font-heading text-4xl md:text-6xl text-cream mb-4">Our Packages</h1>
+        <h1 className="font-heading text-4xl md:text-6xl text-gray-900 dark:text-cream mb-4">Our Packages</h1>
         <div className="w-24 h-px bg-gold mx-auto mb-6" />
-        <p className="text-muted-foreground max-w-2xl mx-auto">
+        <p className="text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">
           Each package is crafted to deliver an unparalleled experience. Select the tier that matches your vision.
         </p>
       </motion.div>
@@ -103,44 +103,48 @@ const Packages = () => (
       {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
         {packagesData.map((pkg, i) => (
-          <motion.div
+          <Link
             key={pkg.name}
-            className={`relative p-8 border bg-black-soft/50 ${pkg.accentClass} ${pkg.featured ? "lg:scale-105" : ""}`}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
+            to="/book"
+            className="block"
           >
-            {pkg.featured && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gold text-black-deep text-xs font-body tracking-widest uppercase font-semibold">
-                The Pinnacle
-              </div>
-            )}
-            <pkg.icon className={`w-12 h-12 mx-auto mb-4 ${pkg.iconClass}`} />
-            <h3 className={`font-heading text-2xl text-center mb-6 ${pkg.iconClass}`}>{pkg.name}</h3>
-
-            <div className="space-y-3">
-              {features.map((f) => (
-                <div key={f} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-gold mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-cream/50 text-xs uppercase tracking-wider">{featureLabels[f]}</p>
-                    <p className="text-cream text-sm">{pkg[f]}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <Link
-              to="/book"
-              className={`mt-8 block text-center py-3 text-sm tracking-widest uppercase font-body transition-all duration-300 ${
-                pkg.featured
-                  ? "bg-gold text-black-deep hover:bg-gold-light font-semibold"
-                  : "border border-gold/30 text-gold hover:bg-gold/10"
-              }`}
+            <motion.div
+              className={`relative p-8 border bg-white dark:bg-black-soft/50 ${pkg.accentClass} rounded-lg cursor-pointer hover:shadow-xl transition-all duration-300 ${pkg.featured ? "lg:scale-105 shadow-lg" : ""}`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
             >
-              Select Package
-            </Link>
-          </motion.div>
+              {pkg.featured && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gold text-white text-xs font-body tracking-widest uppercase font-semibold">
+                  The Pinnacle
+                </div>
+              )}
+              <pkg.icon className={`w-12 h-12 mx-auto mb-4 ${pkg.iconClass}`} />
+              <h3 className={`font-heading text-2xl text-center mb-6 ${pkg.iconClass}`}>{pkg.name}</h3>
+
+              <div className="space-y-3">
+                {features.map((f) => (
+                  <div key={f} className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-gold mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-gray-500 dark:text-cream/50 text-xs uppercase tracking-wider">{featureLabels[f]}</p>
+                      <p className="text-gray-900 dark:text-cream text-sm">{pkg[f]}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                className={`mt-8 block text-center py-3 text-sm tracking-widest uppercase font-body transition-all duration-300 ${
+                  pkg.featured
+                    ? "bg-gold text-white hover:bg-gold-light font-semibold"
+                    : "border border-gold/30 text-gold hover:bg-gold/10"
+                }`}
+              >
+                Select Package
+              </div>
+            </motion.div>
+          </Link>
         ))}
       </div>
     </div>

@@ -12,7 +12,7 @@ const HeroSection = () => (
 
     <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
       <motion.p
-        className="text-gold text-sm md:text-base tracking-[0.3em] uppercase font-body mb-6"
+        className="text-gold text-xs md:text-sm tracking-[0.2em] md:tracking-[0.3em] uppercase font-body mb-4 md:mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, duration: 0.8 }}
@@ -20,7 +20,7 @@ const HeroSection = () => (
         Luxury Event Planning
       </motion.p>
       <motion.h1
-        className="font-heading text-4xl md:text-6xl lg:text-7xl leading-tight mb-6"
+        className="font-heading text-3xl sm:text-4xl md:text-6xl lg:text-7xl leading-tight mb-5 md:mb-6"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.8 }}
@@ -29,7 +29,7 @@ const HeroSection = () => (
         <span className="gold-text-gradient italic">Masterpieces</span>
       </motion.h1>
       <motion.p
-        className="text-cream/70 text-base md:text-lg font-body max-w-2xl mx-auto mb-10 leading-relaxed"
+        className="text-cream/70 text-sm md:text-base lg:text-lg font-body max-w-2xl mx-auto mb-8 md:mb-10 leading-relaxed"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7, duration: 0.8 }}

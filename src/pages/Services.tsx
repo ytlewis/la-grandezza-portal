@@ -12,20 +12,20 @@ const services = [
 ];
 
 const Services = () => (
-  <main className="pt-24 pb-16 bg-black-deep min-h-screen">
+  <main className="pt-24 pb-16 bg-white dark:bg-black-deep min-h-screen">
     <div className="container mx-auto px-4 md:px-8">
       <motion.div className="text-center mb-16" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
         <p className="text-gold text-sm tracking-[0.3em] uppercase font-body mb-3">What We Do Best</p>
-        <h1 className="font-heading text-4xl md:text-6xl text-cream mb-4">Our Services</h1>
+        <h1 className="font-heading text-4xl md:text-6xl text-gray-900 dark:text-cream mb-4">Our Services</h1>
         <div className="w-24 h-px bg-gold mx-auto mb-6" />
-        <p className="text-muted-foreground max-w-2xl mx-auto">Every event is a masterpiece. We bring creativity, precision, and luxury to each occasion we touch.</p>
+        <p className="text-gray-600 dark:text-muted-foreground max-w-2xl mx-auto">Every event is a masterpiece. We bring creativity, precision, and luxury to each occasion we touch.</p>
       </motion.div>
 
       <div className="space-y-12">
         {services.map((service, i) => (
           <motion.div
             key={service.title}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center border border-gold/10 p-8 md:p-12 bg-black-soft/30"
+            className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center border border-gray-200 dark:border-gold/10 p-8 md:p-12 bg-gray-50 dark:bg-black-soft/30 rounded-lg"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -33,20 +33,20 @@ const Services = () => (
           >
             <div className={i % 2 === 1 ? "lg:order-2" : ""}>
               <service.icon className="w-10 h-10 text-gold mb-4" />
-              <h2 className="font-heading text-3xl text-cream mb-4">{service.title}</h2>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-6">{service.description}</p>
+              <h2 className="font-heading text-3xl text-gray-900 dark:text-cream mb-4">{service.title}</h2>
+              <p className="text-gray-600 dark:text-muted-foreground text-sm leading-relaxed mb-6">{service.description}</p>
               <ul className="space-y-2 mb-6">
                 {service.features.map((f) => (
-                  <li key={f} className="text-cream/70 text-sm flex items-center gap-2">
+                  <li key={f} className="text-gray-700 dark:text-cream/70 text-sm flex items-center gap-2">
                     <div className="w-1.5 h-1.5 bg-gold rounded-full" /> {f}
                   </li>
                 ))}
               </ul>
-              <Link to="/book" className="inline-block px-6 py-2.5 border border-gold text-gold text-sm tracking-widest uppercase font-body hover:bg-gold hover:text-black-deep transition-all duration-300">
+              <Link to="/book" className="inline-block px-6 py-2.5 border border-gold text-gold text-sm tracking-widest uppercase font-body hover:bg-gold hover:text-white transition-all duration-300">
                 Book This Service
               </Link>
             </div>
-            <div className={`h-64 bg-gradient-to-br from-gold/5 to-transparent border border-gold/10 flex items-center justify-center ${i % 2 === 1 ? "lg:order-1" : ""}`}>
+            <div className={`h-64 bg-gradient-to-br from-gold/5 to-transparent border border-gray-200 dark:border-gold/10 flex items-center justify-center rounded-lg ${i % 2 === 1 ? "lg:order-1" : ""}`}>
               <service.icon className="w-24 h-24 text-gold/20" />
             </div>
           </motion.div>
