@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { Menu, X, Moon, Sun, UserCircle, LogOut } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUserAuth } from "@/contexts/UserAuthContext";
-import logo from "@/assets/logo.jfif";
+
+const logo = "/assets/logo.jfif";
 
 const navLinks = [
   { name: "Home", path: "/" },

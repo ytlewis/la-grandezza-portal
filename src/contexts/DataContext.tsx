@@ -23,20 +23,24 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Migrate stale /src/assets/ paths to /assets/ (fixes production image paths)
+const migrateImagePath = (path: string) =>
+  typeof path === "string" ? path.replace(/^\/src\/assets\//, "/assets/") : path;
+
 // Default data with image paths as strings
 const defaultTeamMembers: TeamMember[] = [
-  { id: "1", name: "Amara Njeri", role: "Lead Wedding Planner", image: "/src/assets/team-1.jpg", bio: "With over 8 years creating dream weddings, Amara brings passion and precision to every celebration." },
-  { id: "2", name: "David Ochieng", role: "Corporate Events Director", image: "/src/assets/team-2.jpg", bio: "David orchestrates world-class corporate galas and conferences with strategic excellence." },
-  { id: "3", name: "Grace Wambui", role: "Creative Director", image: "/src/assets/team-3.jpg", bio: "Grace transforms spaces into breathtaking environments with her eye for design and detail." },
-  { id: "4", name: "James Kamau", role: "Operations Manager", image: "/src/assets/team-4.jpg", bio: "James ensures every event runs flawlessly from logistics to the final farewell." },
-  { id: "5", name: "Faith Muthoni", role: "Client Relations Manager", image: "/src/assets/team-5.jpg", bio: "Faith ensures every client feels heard, valued, and delighted throughout their journey." },
+  { id: "1", name: "Amara Njeri", role: "Lead Wedding Planner", image: "/assets/team-1.jpg", bio: "With over 8 years creating dream weddings, Amara brings passion and precision to every celebration." },
+  { id: "2", name: "David Ochieng", role: "Corporate Events Director", image: "/assets/team-2.jpg", bio: "David orchestrates world-class corporate galas and conferences with strategic excellence." },
+  { id: "3", name: "Grace Wambui", role: "Creative Director", image: "/assets/team-3.jpg", bio: "Grace transforms spaces into breathtaking environments with her eye for design and detail." },
+  { id: "4", name: "James Kamau", role: "Operations Manager", image: "/assets/team-4.jpg", bio: "James ensures every event runs flawlessly from logistics to the final farewell." },
+  { id: "5", name: "Faith Muthoni", role: "Client Relations Manager", image: "/assets/team-5.jpg", bio: "Faith ensures every client feels heard, valued, and delighted throughout their journey." },
 ];
 
 const defaultPortfolioItems: PortfolioItem[] = [
-  { id: "1", title: "The Anderson Wedding", category: "Wedding", image: "/src/assets/portfolio-wedding.jpg", description: "A sunset garden ceremony with 200 guests", date: "2026-01-15" },
-  { id: "2", title: "Annual Executive Gala", category: "Corporate", image: "/src/assets/portfolio-corporate.jpg", description: "Black-tie corporate gala for 500 attendees", date: "2026-02-20" },
-  { id: "3", title: "Golden 50th Birthday", category: "Birthday", image: "/src/assets/portfolio-birthday.jpg", description: "A milestone celebration with gold-themed décor", date: "2026-03-10" },
-  { id: "4", title: "Champagne Soirée", category: "Social", image: "/src/assets/portfolio-social.jpg", description: "An intimate cocktail gathering for 80 guests", date: "2026-03-25" },
+  { id: "1", title: "The Anderson Wedding", category: "Wedding", image: "/assets/portfolio-wedding.jpg", description: "A sunset garden ceremony with 200 guests", date: "2026-01-15" },
+  { id: "2", title: "Annual Executive Gala", category: "Corporate", image: "/assets/portfolio-corporate.jpg", description: "Black-tie corporate gala for 500 attendees", date: "2026-02-20" },
+  { id: "3", title: "Golden 50th Birthday", category: "Birthday", image: "/assets/portfolio-birthday.jpg", description: "A milestone celebration with gold-themed décor", date: "2026-03-10" },
+  { id: "4", title: "Champagne Soirée", category: "Social", image: "/assets/portfolio-social.jpg", description: "An intimate cocktail gathering for 80 guests", date: "2026-03-25" },
 ];
 
 const defaultContactInfo: ContactInfo = {
@@ -104,7 +108,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => {
     try {
       const stored = localStorage.getItem("teamMembers");
-      return stored ? JSON.parse(stored) : defaultTeamMembers;
+      if (stored) {
+        const parsed: TeamMember[] = JSON.parse(stored);
+        return parsed.map(m => ({ ...m, image: migrateImagePath(m.image) }));
+      }
+      return defaultTeamMembers;
     } catch (error) {
       console.error("Error loading team members:", error);
       return defaultTeamMembers;
@@ -114,7 +122,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(() => {
     try {
       const stored = localStorage.getItem("portfolioItems");
-      return stored ? JSON.parse(stored) : defaultPortfolioItems;
+      if (stored) {
+        const parsed: PortfolioItem[] = JSON.parse(stored);
+        return parsed.map(p => ({ ...p, image: migrateImagePath(p.image) }));
+      }
+      return defaultPortfolioItems;
     } catch (error) {
       console.error("Error loading portfolio items:", error);
       return defaultPortfolioItems;

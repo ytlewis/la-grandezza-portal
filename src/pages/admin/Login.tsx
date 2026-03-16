@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Lock, UserPlus, LogIn, Crown } from "lucide-react";
 import { toast } from "sonner";
-import logo from "@/assets/logo.jfif";
+
+const logo = "/assets/logo.jfif";
 
 const AdminLogin = () => {
   const { login, signup, hasAdmins } = useAuth();
