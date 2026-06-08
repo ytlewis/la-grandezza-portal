@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Lock, UserPlus, LogIn, Crown, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Lock, UserPlus, LogIn, Crown, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { configured } from "@/lib/firebase";
 
 const logo = "/assets/logo.jfif";
 
@@ -64,6 +65,45 @@ const AdminLogin = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black-deep">
         <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  if (!configured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black-deep px-4 py-12">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-flex flex-col items-center gap-3">
+              <img src={logo} alt="La Grandezza" className="w-16 h-16 rounded-full object-cover shadow-lg" />
+              <span className="font-heading text-xl tracking-wider gold-text-gradient">La Grandezza</span>
+            </Link>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Firebase Not Configured</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                The admin dashboard is not available because Firebase environment variables are not set. 
+              </p>
+              <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 text-left">
+                <p className="text-xs text-amber-900 dark:text-amber-100 font-mono">
+                  Missing env vars: VITE_FIREBASE_API_KEY, VITE_FIREBASE_PROJECT_ID, etc.
+                </p>
+              </div>
+              <p className="text-xs text-gray-400 mt-4">
+                If this is a Vercel deployment, configure environment variables in your project settings and redeploy.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-xs text-gray-400 mt-6">
+            <Link to="/" className="hover:text-gold transition-colors">← Back to website</Link>
+          </p>
+        </div>
       </div>
     );
   }

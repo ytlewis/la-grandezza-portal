@@ -163,7 +163,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ── signup ────────────────────────────────────────────────────────────────
   const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    if (!auth || !db) return false;
+    if (!auth || !db) {
+      console.error("[Auth] Firebase not configured - check VITE_FIREBASE_* env vars");
+      return false;
+    }
     try {
       // Determine role: first admin is super
       const snap = await getDocs(query(collection(db, "admins"), limit(1)));
@@ -182,7 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await refreshAdmins();
       return true;
     } catch (e: unknown) {
-      console.error("[Auth] signup error:", e);
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.error("[Auth] signup error:", errMsg, e);
       return false;
     }
   };
