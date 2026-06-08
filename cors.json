@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://la-grandezza-portal.vercel.app", "http://localhost:8080", "http://localhost:8081", "http://localhost:8082"],
+    "method": ["GET", "HEAD", "DELETE", "POST", "PUT", "PATCH"],
+    "responseHeader": ["Content-Type", "x-goog-meta-*"],
+    "maxAgeSeconds": 3600
+  }
+]

@@ -64,7 +64,17 @@ const TeamManagement = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !storage) return;
+    if (!file) return;
+
+    if (!storage) {
+      toast.error("Firebase Storage not configured");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast.error("You must be signed in to upload images");
+      return;
+    }
 
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size should be less than 5MB");
@@ -80,14 +90,29 @@ const TeamManagement = () => {
     try {
       const fileName = `team/${Date.now()}-${file.name}`;
       const storageRef = ref(storage, fileName);
-      await uploadBytes(storageRef, file);
+      console.log(`[Upload] Starting upload for: ${fileName}`);
+      
+      const uploadTask = uploadBytes(storageRef, file);
+      await uploadTask;
+      
+      console.log(`[Upload] Upload complete, getting download URL...`);
       const downloadUrl = await getDownloadURL(storageRef);
+      console.log(`[Upload] Download URL obtained:`, downloadUrl);
+      
       setFormData({ ...formData, image: downloadUrl });
       setImagePreview(downloadUrl);
       toast.success("Image uploaded successfully");
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Failed to upload image");
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("[Upload] Error:", error);
+      
+      if (errMsg.includes("auth") || errMsg.includes("permission")) {
+        toast.error("Permission denied. Make sure you're signed in.");
+      } else if (errMsg.includes("network") || errMsg.includes("CORS")) {
+        toast.error("Network error. Check your connection and refresh the page.");
+      } else {
+        toast.error(`Upload failed: ${errMsg}`);
+      }
     } finally {
       setIsUploading(false);
     }
