@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><title>Firebase Test</title></head>
+<body>
+<h2>Firebase Firestore Test</h2>
+<div id="status">Loading...</div>
+<div id="results"></div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+const config = {
+  apiKey: "AIzaSyCCe_le_LySEEU7X6Qk4Wt4q0rXyvPUPc0",
+  authDomain: "la-grandezza.firebaseapp.com",
+  projectId: "la-grandezza",
+  storageBucket: "la-grandezza.firebasestorage.app",
+  messagingSenderId: "497136272235",
+  appId: "1:497136272235:web:08761f5f23098cd65b022e"
+};
+document.getElementById("status").textContent = "Connecting...";
+try {
+  const app = initializeApp(config);
+  const db = getFirestore(app);
+  document.getElementById("status").textContent = "Listening for teamMembers...";
+  onSnapshot(collection(db, "teamMembers"),
+    snap => {
+      document.getElementById("status").textContent = "OK - " + snap.size + " docs - fromCache:" + snap.metadata.fromCache;
+      document.getElementById("results").innerHTML = snap.docs.map(d => "<p><b>" + d.data().name + "</b> - " + d.data().role + "</p>").join("");
+    },
+    err => {
+      document.getElementById("status").textContent = "ERROR: " + err.code + " - " + err.message;
+      document.getElementById("status").style.color = "red";
+    }
+  );
+} catch(e) {
+  document.getElementById("status").textContent = "INIT ERROR: " + e.message;
+  document.getElementById("status").style.color = "red";
+}
+</script>
+</body>
+</html>

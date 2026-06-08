@@ -31,11 +31,11 @@ const AdminSettings = () => {
   const admins = getAdmins();
   const isSuperAdmin = currentAdmin?.role === "super";
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPw.length < 8) { toast.error("Password must be at least 8 characters."); return; }
     if (newPw !== confirmPw) { toast.error("Passwords do not match."); return; }
-    const ok = changePassword(currentPw, newPw);
+    const ok = await changePassword(currentPw, newPw);
     if (ok) {
       toast.success("Password updated successfully.");
       setCurrentPw(""); setNewPw(""); setConfirmPw("");
@@ -49,10 +49,10 @@ const AdminSettings = () => {
     toast.success("Settings saved.");
   };
 
-  const handleAddAdmin = (e: React.FormEvent) => {
+  const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newAdminPw.length < 8) { toast.error("Password must be at least 8 characters."); return; }
-    const ok = addAdmin(newName, newEmail, newAdminPw);
+    const ok = await addAdmin(newName, newEmail, newAdminPw);
     if (ok) {
       toast.success(`Admin account created for ${newName}.`);
       setNewName(""); setNewEmail(""); setNewAdminPw("");
@@ -61,8 +61,8 @@ const AdminSettings = () => {
     }
   };
 
-  const handleRemove = (id: string, name: string) => {
-    const ok = removeAdmin(id);
+  const handleRemove = async (id: string, name: string) => {
+    const ok = await removeAdmin(id);
     if (ok) toast.success(`${name} removed.`);
     else toast.error("Cannot remove this admin.");
   };

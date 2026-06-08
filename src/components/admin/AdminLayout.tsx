@@ -1,6 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
@@ -18,10 +20,12 @@ import {
   X,
   MessageSquare,
   Settings,
-  Sparkles
+  Sparkles,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 import { AdminView } from "@/pages/admin/Dashboard";
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -35,6 +39,15 @@ const AdminLayout = ({ children, currentView, onViewChange }: AdminLayoutProps) 
   const { testimonials, bookings } = useData();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { currentAdmin } = useAuth();
+  const [fbUser, setFbUser] = useState<string | null>(auth?.currentUser?.email ?? null);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsub = onAuthStateChanged(auth, (user) => {
+      setFbUser(user?.email ?? null);
+    });
+    return () => unsub();
+  }, []);
 
   const pendingTestimonials = testimonials.filter(t => t.status === "pending").length;
   const pendingBookings = bookings.filter(b => b.status === "pending").length;
@@ -82,6 +95,10 @@ const AdminLayout = ({ children, currentView, onViewChange }: AdminLayoutProps) 
                 {currentAdmin.name}
               </p>
             )}
+            <div className={`flex items-center gap-1.5 mt-2 text-xs ${fbUser ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"}`}>
+              {fbUser ? <Wifi size={12} /> : <WifiOff size={12} />}
+              {fbUser ? "Syncing to cloud" : "Not synced — log out & back in"}
+            </div>
           </div>
           
           <ScrollArea className="flex-1 p-4">

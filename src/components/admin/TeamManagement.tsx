@@ -5,30 +5,49 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Upload } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "@/lib/firebase";
+import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/DataContext";
 import { TeamMember } from "@/types/admin";
 
 const TeamManagement = () => {
   const { teamMembers, updateTeamMembers } = useData();
+  const { isAuthenticated } = useAuth();
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ name: "", role: "", bio: "", image: "" });
   const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleSave = () => {
-    if (editingMember) {
-      updateTeamMembers(teamMembers.map(m => m.id === editingMember.id ? { ...editingMember, ...formData } : m));
-      toast.success("Team member updated!");
-    } else {
-      updateTeamMembers([...teamMembers, { id: Date.now().toString(), ...formData }]);
-      toast.success("Team member added!");
+  const handleSave = async () => {
+    if (!formData.name || !formData.role || !formData.image) {
+      toast.error("Please fill in all fields including image");
+      return;
     }
-    setIsDialogOpen(false);
-    setFormData({ name: "", role: "", bio: "", image: "" });
-    setImagePreview("");
-    setEditingMember(null);
+
+    try {
+      if (editingMember) {
+        const updated = teamMembers.map(m =>
+          m.id === editingMember.id ? { ...editingMember, ...formData } : m
+        );
+        await updateTeamMembers(updated);
+        toast.success("Team member updated!");
+      } else {
+        const newMember: TeamMember = { id: Date.now().toString(), ...formData };
+        await updateTeamMembers([...teamMembers, newMember]);
+        toast.success("Team member added!");
+      }
+      setIsDialogOpen(false);
+      setFormData({ name: "", role: "", bio: "", image: "" });
+      setImagePreview("");
+      setEditingMember(null);
+    } catch (error) {
+      console.error("Save error:", error);
+      toast.error("Failed to save team member");
+    }
   };
 
   const handleEdit = (member: TeamMember) => {
@@ -43,28 +62,34 @@ const TeamManagement = () => {
     toast.success("Team member removed!");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // Check file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size should be less than 2MB");
-        return;
-      }
+    if (!file || !storage) return;
 
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast.error("Please select an image file");
-        return;
-      }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size should be less than 5MB");
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setFormData({ ...formData, image: base64String });
-        setImagePreview(base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileName = `team/${Date.now()}-${file.name}`;
+      const storageRef = ref(storage, fileName);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      setFormData({ ...formData, image: downloadUrl });
+      setImagePreview(downloadUrl);
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -82,10 +107,23 @@ const TeamManagement = () => {
           <h2 className="text-3xl font-bold tracking-tight">Team Management</h2>
           <p className="text-muted-foreground">Manage your team members</p>
         </div>
-        <Button onClick={handleOpenDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Member
-        </Button>
+        <div className="flex items-center gap-3">
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <span className="text-sm text-green-700 dark:text-green-300">Syncing live</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <span className="text-sm text-amber-700 dark:text-amber-300">Not syncing</span>
+            </div>
+          )}
+          <Button onClick={handleOpenDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Member
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -153,20 +191,31 @@ const TeamManagement = () => {
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
+                    disabled={isUploading}
                     className="flex-1"
                     id="team-photo-upload"
                   />
                   <Button
                     type="button"
                     variant="outline"
+                    disabled={isUploading}
                     onClick={() => document.getElementById('team-photo-upload')?.click()}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Choose File
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Choose File
+                      </>
+                    )}
                   </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Or enter an image URL below (max 2MB for uploads)
+                  Or enter an image URL below (max 5MB for uploads)
                 </div>
                 <Input
                   value={formData.image}

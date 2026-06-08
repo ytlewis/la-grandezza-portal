@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -6,10 +6,15 @@ import {
   updatePassword,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  onAuthStateChanged,
+  User,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import {
+  doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, limit,
+} from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 export interface AdminAccount {
   id: string;
   name: string;
@@ -32,35 +37,19 @@ interface AuthContextType {
   currentAdmin: AdminAccount | null;
   adminSettings: AdminSettings;
   hasAdmins: boolean;
+  firebaseReady: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   changePassword: (current: string, next: string) => Promise<boolean>;
   updateAdminSettings: (s: AdminSettings) => void;
   addAdmin: (name: string, email: string, password: string) => Promise<boolean>;
-  removeAdmin: (id: string) => boolean;
+  removeAdmin: (id: string) => Promise<boolean>;
   getAdmins: () => AdminAccount[];
 }
 
-// ── Storage keys ───────────────────────────────────────────────────────────────
-const ADMINS_KEY = "lg_admins";
-const SESSION_KEY = "lg_admin_session";
+// ── Defaults ──────────────────────────────────────────────────────────────────
 const SETTINGS_KEY = "lg_admin_settings";
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-const hashPw = (password: string, salt: string): string => {
-  let h = 0;
-  const s = password + salt + "lg_admin_2024";
-  for (let i = 0; i < s.length; i++) { h = (h << 5) - h + s.charCodeAt(i); h |= 0; }
-  return Math.abs(h).toString(36) + salt.slice(-6);
-};
-
-interface StoredAdmin extends AdminAccount { passwordHash: string; salt: string; }
-
-const loadAdmins = (): StoredAdmin[] => {
-  try { const r = localStorage.getItem(ADMINS_KEY); return r ? JSON.parse(r) : []; } catch { return []; }
-};
-const saveAdmins = (a: StoredAdmin[]) => localStorage.setItem(ADMINS_KEY, JSON.stringify(a));
 
 const DEFAULT_SETTINGS: AdminSettings = {
   siteName: "La Grandezza Events",
@@ -71,144 +60,218 @@ const DEFAULT_SETTINGS: AdminSettings = {
   bookingNotificationEmail: "",
 };
 
-// ── Context ────────────────────────────────────────────────────────────────────
+// ── Context ───────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentAdmin, setCurrentAdmin] = useState<AdminAccount | null>(() => {
-    try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [currentAdmin, setCurrentAdmin] = useState<AdminAccount | null>(null);
+  const [admins, setAdmins] = useState<AdminAccount[]>([]);
+  const [hasAdmins, setHasAdmins] = useState(false);
+  const [firebaseReady, setFirebaseReady] = useState(false);
   const [adminSettings, setAdminSettings] = useState<AdminSettings>(() => {
-    try { const s = localStorage.getItem(SETTINGS_KEY); return s ? { ...DEFAULT_SETTINGS, ...JSON.parse(s) } : DEFAULT_SETTINGS; } catch { return DEFAULT_SETTINGS; }
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
   });
 
-  const isAuthenticated = currentAdmin !== null;
-  const hasAdmins = loadAdmins().length > 0;
-
-  // Sign into both local store AND Firebase Auth
-  const login = async (email: string, password: string): Promise<boolean> => {
-    const admins = loadAdmins();
-    const found = admins.find(a => a.email.toLowerCase() === email.toLowerCase());
-    if (!found) return false;
-    if (hashPw(password, found.salt) !== found.passwordHash) return false;
-
-    // Also sign into Firebase Auth so Firestore rules pass
-    if (auth) {
-      try { await signInWithEmailAndPassword(auth, email, password); }
-      catch { /* Firebase Auth user may not exist yet — create it */ 
-        try { await createUserWithEmailAndPassword(auth, email, password); } catch { /* already exists or other error */ }
-      }
+  // ── On mount: listen to Firebase Auth state ───────────────────────────────
+  useEffect(() => {
+    if (!auth || !db) {
+      setFirebaseReady(true);
+      return;
     }
 
-    const { passwordHash: _, salt: __, ...account } = found;
-    setCurrentAdmin(account);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(account));
-    return true;
-  };
-
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    const admins = loadAdmins();
-    if (admins.find(a => a.email.toLowerCase() === email.toLowerCase())) return false;
-
-    // Create Firebase Auth user
-    if (auth) {
-      try { await createUserWithEmailAndPassword(auth, email, password); }
-      catch (e: unknown) {
-        const code = (e as { code?: string }).code;
-        if (code !== "auth/email-already-in-use") return false;
-        // Already exists in Firebase — sign in instead
-        try { await signInWithEmailAndPassword(auth, email, password); } catch { return false; }
-      }
-    }
-
-    const salt = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    const newAdmin: StoredAdmin = {
-      id: Date.now().toString(),
-      name: name.trim(),
-      email: email.toLowerCase().trim(),
-      role: admins.length === 0 ? "super" : "admin",
-      passwordHash: hashPw(password, salt),
-      salt,
-      createdAt: new Date().toISOString(),
-    };
-    saveAdmins([...admins, newAdmin]);
-    const { passwordHash: _, salt: __, ...account } = newAdmin;
-    setCurrentAdmin(account);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(account));
-    return true;
-  };
-
-  const logout = async (): Promise<void> => {
-    if (auth) try { await signOut(auth); } catch { /* ignore */ }
-    setCurrentAdmin(null);
-    sessionStorage.removeItem(SESSION_KEY);
-  };
-
-  const changePassword = async (current: string, next: string): Promise<boolean> => {
-    if (!currentAdmin) return false;
-    const admins = loadAdmins();
-    const found = admins.find(a => a.id === currentAdmin.id);
-    if (!found) return false;
-    if (hashPw(current, found.salt) !== found.passwordHash) return false;
-
-    // Update Firebase Auth password
-    if (auth?.currentUser) {
+    // Check if any admins exist in Firestore (for login vs signup decision)
+    const checkAdmins = async () => {
       try {
-        const cred = EmailAuthProvider.credential(currentAdmin.email, current);
-        await reauthenticateWithCredential(auth.currentUser, cred);
-        await updatePassword(auth.currentUser, next);
-      } catch { return false; }
-    }
+        const snap = await getDocs(query(collection(db!, "admins"), limit(1)));
+        setHasAdmins(!snap.empty);
+      } catch {
+        setHasAdmins(false);
+      }
+    };
 
-    const newSalt = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    saveAdmins(admins.map(a => a.id === currentAdmin.id ? { ...a, passwordHash: hashPw(next, newSalt), salt: newSalt } : a));
-    return true;
+    checkAdmins();
+
+    const unsub = onAuthStateChanged(auth!, async (user) => {
+      setFirebaseUser(user);
+
+      if (user) {
+        // Load admin profile from Firestore
+        try {
+          const snap = await getDoc(doc(db!, "admins", user.uid));
+          if (snap.exists()) {
+            const profile = { id: snap.id, ...snap.data() } as AdminAccount;
+            setCurrentAdmin(profile);
+            // Refresh full admins list
+            await refreshAdmins();
+          } else {
+            // Firebase Auth user exists but no Firestore profile — sign them out
+            await signOut(auth!);
+            setCurrentAdmin(null);
+          }
+        } catch {
+          setCurrentAdmin(null);
+        }
+      } else {
+        setCurrentAdmin(null);
+      }
+
+      setFirebaseReady(true);
+    });
+
+    return () => unsub();
+  }, []);
+
+  const refreshAdmins = async () => {
+    if (!db) return;
+    try {
+      const snap = await getDocs(collection(db, "admins"));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() } as AdminAccount));
+      setAdmins(list);
+      setHasAdmins(list.length > 0);
+    } catch {
+      // ignore
+    }
   };
 
+  // ── login ─────────────────────────────────────────────────────────────────
+  const login = async (email: string, password: string): Promise<boolean> => {
+    if (!auth || !db) return false;
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Verify Firestore profile exists
+      const snap = await getDoc(doc(db, "admins", cred.user.uid));
+      if (!snap.exists()) {
+        // Auth account exists but no admin profile — deny access
+        await signOut(auth);
+        return false;
+      }
+      const profile = { id: snap.id, ...snap.data() } as AdminAccount;
+      setCurrentAdmin(profile);
+      await refreshAdmins();
+      return true;
+    } catch (e: unknown) {
+      console.error("[Auth] login error:", e);
+      return false;
+    }
+  };
+
+  // ── signup ────────────────────────────────────────────────────────────────
+  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
+    if (!auth || !db) return false;
+    try {
+      // Determine role: first admin is super
+      const snap = await getDocs(query(collection(db, "admins"), limit(1)));
+      const role: "super" | "admin" = snap.empty ? "super" : "admin";
+
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const profile: AdminAccount = {
+        id: cred.user.uid,
+        name,
+        email,
+        role,
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, "admins", cred.user.uid), profile);
+      setCurrentAdmin(profile);
+      await refreshAdmins();
+      return true;
+    } catch (e: unknown) {
+      console.error("[Auth] signup error:", e);
+      return false;
+    }
+  };
+
+  // ── logout ────────────────────────────────────────────────────────────────
+  const logout = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error("[Auth] logout error:", e);
+    }
+    setCurrentAdmin(null);
+    setFirebaseUser(null);
+  };
+
+  // ── changePassword ────────────────────────────────────────────────────────
+  const changePassword = async (current: string, next: string): Promise<boolean> => {
+    if (!auth?.currentUser || !firebaseUser) return false;
+    try {
+      const cred = EmailAuthProvider.credential(firebaseUser.email!, current);
+      await reauthenticateWithCredential(firebaseUser, cred);
+      await updatePassword(firebaseUser, next);
+      return true;
+    } catch (e) {
+      console.error("[Auth] changePassword error:", e);
+      return false;
+    }
+  };
+
+  // ── updateAdminSettings ───────────────────────────────────────────────────
   const updateAdminSettings = (s: AdminSettings) => {
     setAdminSettings(s);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch { /* ignore */ }
   };
 
+  // ── addAdmin ──────────────────────────────────────────────────────────────
   const addAdmin = async (name: string, email: string, password: string): Promise<boolean> => {
-    const admins = loadAdmins();
-    if (admins.find(a => a.email.toLowerCase() === email.toLowerCase())) return false;
-
-    // Create Firebase Auth account for the new admin
-    if (auth) {
-      try { await createUserWithEmailAndPassword(auth, email, password); }
-      catch (e: unknown) {
-        const code = (e as { code?: string }).code;
-        if (code !== "auth/email-already-in-use") return false;
-      }
+    if (!auth || !db) return false;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      const profile: AdminAccount = {
+        id: cred.user.uid,
+        name,
+        email,
+        role: "admin",
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(doc(db, "admins", cred.user.uid), profile);
+      await refreshAdmins();
+      return true;
+    } catch (e: unknown) {
+      console.error("[Auth] addAdmin error:", e);
+      return false;
     }
-
-    const salt = Date.now().toString(36) + Math.random().toString(36).slice(2);
-    saveAdmins([...admins, {
-      id: Date.now().toString(), name: name.trim(),
-      email: email.toLowerCase().trim(), role: "admin",
-      passwordHash: hashPw(password, salt), salt,
-      createdAt: new Date().toISOString(),
-    }]);
-    return true;
   };
 
-  const removeAdmin = (id: string): boolean => {
-    if (!currentAdmin || currentAdmin.role !== "super") return false;
-    if (id === currentAdmin.id) return false;
-    saveAdmins(loadAdmins().filter(a => a.id !== id));
-    return true;
+  // ── removeAdmin ───────────────────────────────────────────────────────────
+  const removeAdmin = async (id: string): Promise<boolean> => {
+    if (!db) return false;
+    // Cannot remove yourself or a super admin
+    if (id === currentAdmin?.id) return false;
+    try {
+      await deleteDoc(doc(db, "admins", id));
+      await refreshAdmins();
+      return true;
+    } catch (e) {
+      console.error("[Auth] removeAdmin error:", e);
+      return false;
+    }
   };
 
-  const getAdmins = (): AdminAccount[] =>
-    loadAdmins().map(({ passwordHash: _, salt: __, ...a }) => a);
+  const getAdmins = () => admins;
 
   return (
     <AuthContext.Provider value={{
-      isAuthenticated, currentAdmin, adminSettings, hasAdmins,
-      login, signup, logout, changePassword,
-      updateAdminSettings, addAdmin, removeAdmin, getAdmins,
+      isAuthenticated: !!currentAdmin && !!firebaseUser,
+      currentAdmin,
+      adminSettings,
+      hasAdmins,
+      firebaseReady,
+      login,
+      signup,
+      logout,
+      changePassword,
+      updateAdminSettings,
+      addAdmin,
+      removeAdmin,
+      getAdmins,
     }}>
       {children}
     </AuthContext.Provider>

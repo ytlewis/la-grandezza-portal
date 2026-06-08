@@ -9,6 +9,22 @@
     <meta property="og:title" content="La Grandezza Events | Luxury Event Planning" />
     <meta property="og:description" content="Where moments become masterpieces. Premium luxury event planning in Kenya." />
     <meta property="og:type" content="website" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <!-- Cache buster: runs before React, forces reload if bundle version changed -->
+    <script>
+      (function() {
+        var V = "app-B70EMXcp";
+        if (sessionStorage.getItem("lg_v") !== V) {
+          sessionStorage.setItem("lg_v", V);
+          // Add timestamp to URL to bypass any proxy/CDN cache
+          var url = location.href.split("?")[0].split("#")[0];
+          var ts = Date.now();
+          location.replace(url + "?v=" + ts + (location.hash || ""));
+        }
+      })();
+    </script>
     <style>
       /* Circular favicon styling */
       link[rel="icon"] {

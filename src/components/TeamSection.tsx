@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
 import { useData } from "@/contexts/DataContext";
+import { configured } from "@/lib/firebase";
 
 const TeamSection = () => {
-  const { teamMembers } = useData();
+  const { teamMembers, loading } = useData();
   return (
     <section className="py-24 bg-white dark:bg-black-deep">
       <div className="container mx-auto px-4 md:px-8">
@@ -15,6 +16,10 @@ const TeamSection = () => {
           <p className="text-gold text-sm tracking-[0.3em] uppercase font-body mb-3">The People Behind The Magic</p>
           <h2 className="font-heading text-3xl md:text-5xl text-gray-900 dark:text-cream mb-4">Meet Our Experts</h2>
           <div className="w-24 h-px bg-gold mx-auto" />
+          {/* DEBUG — remove after fix */}
+          <p className="text-xs text-gray-400 mt-4">
+            firebase:{configured?"on":"off"} | loading:{loading?"yes":"no"} | members:{teamMembers.length} | first:{teamMembers[0]?.name ?? "none"}
+          </p>
         </motion.div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8">

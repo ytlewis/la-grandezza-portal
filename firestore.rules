@@ -2,7 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Public content — anyone can read, only authenticated admins can write
     match /teamMembers/{id} {
       allow read: if true;
       allow write: if request.auth != null;
@@ -24,14 +23,19 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Testimonials — anyone can create (submit), only admins can update/delete
+    // Admins — anyone can read (for hasAdmins check on login page)
+    // A user can always write their own profile (uid matches doc id)
+    match /admins/{id} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == id;
+    }
+
     match /testimonials/{id} {
       allow read: if true;
       allow create: if true;
       allow update, delete: if request.auth != null;
     }
 
-    // Bookings — anyone can create, only admins can read/update/delete
     match /bookings/{id} {
       allow create: if true;
       allow read, update, delete: if request.auth != null;

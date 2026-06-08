@@ -16,11 +16,10 @@ interface UserAuthContextType {
 
 const UserAuthContext = createContext<UserAuthContextType | undefined>(undefined);
 
-const USERS_KEY = "lg_users";
+// Session key only — never persisted to localStorage
 const SESSION_KEY = "lg_user_session";
 
-// Simple deterministic hash — keeps plain-text passwords out of localStorage.
-// Not a substitute for bcrypt on a real backend, but far better than plain text.
+// Simple hash — keeps plain-text passwords out of storage
 const hashPassword = (password: string, salt: string): string => {
   let hash = 0;
   const str = password + salt + "lg_salt_2024";
@@ -37,6 +36,10 @@ interface StoredUser extends UserAccount {
   salt: string;
 }
 
+// Users stored in sessionStorage only (cleared when browser closes)
+// Key is scoped so it doesn't conflict with admin keys
+const USERS_SESSION_KEY = "lg_site_users";
+
 export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserAccount | null>(() => {
     try {
@@ -49,7 +52,7 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
 
   const getUsers = (): StoredUser[] => {
     try {
-      const stored = localStorage.getItem(USERS_KEY);
+      const stored = sessionStorage.getItem(USERS_SESSION_KEY);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -57,7 +60,9 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const saveUsers = (users: StoredUser[]) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    try {
+      sessionStorage.setItem(USERS_SESSION_KEY, JSON.stringify(users));
+    } catch { /* ignore */ }
   };
 
   const login = (email: string, password: string): boolean => {
@@ -68,7 +73,7 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
     if (hash !== found.passwordHash) return false;
     const { passwordHash: _, salt: __, ...account } = found;
     setUser(account);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(account));
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(account)); } catch { /* ignore */ }
     return true;
   };
 
@@ -87,13 +92,13 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
     saveUsers([...users, newUser]);
     const { passwordHash: _, salt: __, ...account } = newUser;
     setUser(account);
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(account));
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(account)); } catch { /* ignore */ }
     return true;
   };
 
   const logout = () => {
     setUser(null);
-    sessionStorage.removeItem(SESSION_KEY);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
   };
 
   return (
