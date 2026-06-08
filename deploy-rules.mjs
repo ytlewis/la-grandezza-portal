@@ -49,8 +49,9 @@ service cloud.firestore {
       allow update, delete: if request.auth != null;
     }
     match /bookings/{id} {
+      allow read: if true;
       allow create: if true;
-      allow read, update, delete: if request.auth != null;
+      allow update, delete: if request.auth != null;
     }
   }
 }`;
